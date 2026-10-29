@@ -1,0 +1,75 @@
+name: Agent workspace check
+# The Marketplace takes a description under 125 characters.
+description: >-
+  Score a Claude Code agent workspace against checkable hygiene patterns,
+  with a job summary and a README badge.
+author: James Ross
+
+branding:
+  icon: check-square
+  color: gray-dark
+
+inputs:
+  path:
+    description: >-
+      Directory to check, relative to the checkout. Defaults to the
+      repository root.
+    required: false
+    default: .
+  min-score:
+    description: >-
+      Fail the step when the score is below this number, out of 10. Blank
+      (the default) reports the score and never fails. A value that is not
+      a number fails the step with exit 2.
+    required: false
+    default: ''
+  summary:
+    description: >-
+      'true' (default) writes the score, the check table and a badge
+      snippet to the job summary. 'false' writes none of it. The outputs
+      are set either way.
+    required: false
+    default: 'true'
+
+outputs:
+  score:
+    description: The score out of 10, to one decimal place, such as 8.1.
+    value: ${{ steps.check.outputs.score }}
+  band:
+    description: The linter's band for the score, one of disciplined, maturing or exposed.
+    value: ${{ steps.check.outputs.band }}
+  badge-markdown:
+    description: A shields.io badge in markdown, ready to paste into a README.
+    value: ${{ steps.check.outputs.badge-markdown }}
+
+runs:
+  using: composite
+  steps:
+    - name: Score the workspace
+      id: check
+      shell: bash
+      env:
+        CHECK_PATH: ${{ inputs.path }}
+        MIN_SCORE: ${{ inputs.min-score }}
+        SUMMARY: ${{ inputs.summary }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        # No setup-python step: GitHub-hosted runners ship Python 3.9+, which
+        # is all both scripts need (stdlib only). Windows names it python,
+        # Linux and macOS python3.
+        if [ "${RUNNER_OS:-}" = "Windows" ]; then
+          py=python
+        else
+          py=python3
+        fi
+        if [ ! -d "$CHECK_PATH" ]; then
+          # Escaped as @actions/core escapes a message, so the value cannot
+          # end this line and start a workflow command of its own.
+          shown=${CHECK_PATH//%/%25}; shown=${shown//$'\r'/%0D}; shown=${shown//$'\n'/%0A}
+          echo "::error::path '$shown' is not a directory in the checkout."
+          exit 2
+        fi
+        # "--" so a path that starts with "-" is read as a path, not an option.
+        payload=$("$py" "$ACTION_PATH/workspace_check.py" --json -- "$CHECK_PATH")
+        printf '%s\n' "$payload" | "$py" "$ACTION_PATH/render.py"

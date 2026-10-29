@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+.DS_Store
+Thumbs.db
+
+# secret-file patterns (defence-in-depth: the linter's own secrets check is
+# the class this guards, so its working copy shouldn't carry one either)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*credentials*
+*secrets*

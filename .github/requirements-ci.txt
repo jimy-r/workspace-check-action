@@ -1,0 +1,6 @@
+# CI toolchain pins. Pinned on purpose (see ruff.toml's own header comment): a
+# ruff bump can silently widen its default lint set with zero code change
+# here. Dependabot watches this file so bumps arrive as PRs. PyYAML reads
+# action.yml for the inputs-in-run-body check.
+ruff==0.16.9
+PyYAML==6.0.3

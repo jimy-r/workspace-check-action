@@ -1,0 +1,193 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: pip install -r .github/requirements-ci.txt
+      - run: ruff check .
+      - run: ruff format --check .
+
+      # Inputs reach the scripts through env: only. An inputs expression in a
+      # run: body is pasted into the shell script before it runs, so a crafted
+      # path or min-score would execute as code.
+      - name: No inputs expression in any run body of action.yml
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          import sys
+
+          import yaml
+
+          with open("action.yml", encoding="utf-8") as handle:
+              action = yaml.safe_load(handle)
+          pattern = re.compile(r"\$\{\{[^}]*\binputs\.")
+          steps = action["runs"]["steps"]
+          bad = [
+              step.get("name", f"step {i}")
+              for i, step in enumerate(steps)
+              if pattern.search(str(step.get("run", "")))
+          ]
+          if not any("run" in step for step in steps):
+              print("::error::action.yml has no run step to check.")
+              sys.exit(1)
+          if bad:
+              for name in bad:
+                  print(f"::error::run body of '{name}' reads an input directly. Pass it through env: instead.")
+              sys.exit(1)
+          print(f"OK: {len(steps)} step(s), no input read directly in a run body.")
+          PY
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m unittest test_render -v
+      - run: python workspace_check.py --self-test
+
+  vendored:
+    name: Vendored linter matches upstream
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Compare workspace_check.py with the flagship at the UPSTREAM commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha=$(tr -d '[:space:]' < UPSTREAM)
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::UPSTREAM must hold one full 40-character commit SHA."
+            exit 1
+          fi
+          upstream="$RUNNER_TEMP/workspace_check.upstream.py"
+          curl -fsSL --retry 3 -o "$upstream" \
+            "https://raw.githubusercontent.com/jimy-r/agent-workspace-architecture/$sha/tools/workspace_check.py"
+          if ! cmp -s workspace_check.py "$upstream"; then
+            echo "::error::workspace_check.py differs from the flagship's tools/workspace_check.py at $sha. Re-vendor it verbatim, or update UPSTREAM."
+            diff -u "$upstream" workspace_check.py | head -50 || true
+            exit 1
+          fi
+          echo "OK: workspace_check.py matches the flagship at $sha."
+
+  dogfood:
+    name: Run the action (${{ matrix.os }})
+    needs: [lint, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run the action on this repository's checkout
+        id: repo
+        uses: ./
+
+      - name: Assert the checkout run set every output
+        shell: bash
+        env:
+          SCORE: ${{ steps.repo.outputs.score }}
+          BAND: ${{ steps.repo.outputs.band }}
+          BADGE: ${{ steps.repo.outputs.badge-markdown }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$SCORE" =~ ^[0-9]+\.[0-9]$ ]]; then
+            echo "::error::score output was '$SCORE', not a one-decimal number."
+            exit 1
+          fi
+          case "$BAND" in
+            disciplined | maturing | exposed) ;;
+            *) echo "::error::band output was '$BAND'."; exit 1 ;;
+          esac
+          case "$BADGE" in
+            "[![workspace score](https://img.shields.io/badge/"*) ;;
+            *) echo "::error::badge-markdown output was '$BADGE'."; exit 1 ;;
+          esac
+          echo "OK: $SCORE/10, $BAND."
+
+      - name: Run the action on the fixture at its own score (expect a pass)
+        id: fixture
+        uses: ./
+        with:
+          path: tests/fixtures/workspace
+          min-score: '8.1'
+
+      - name: Assert the fixture's outputs
+        shell: bash
+        env:
+          SCORE: ${{ steps.fixture.outputs.score }}
+          BAND: ${{ steps.fixture.outputs.band }}
+          BADGE: ${{ steps.fixture.outputs.badge-markdown }}
+        run: |
+          set -euo pipefail
+          want_badge='[![workspace score](https://img.shields.io/badge/workspace%20score-8.1%2F10-brightgreen)](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds)'
+          if [ "$SCORE" != "8.1" ] || [ "$BAND" != "disciplined" ]; then
+            echo "::error::fixture scored '$SCORE' '$BAND', not 8.1 disciplined."
+            exit 1
+          fi
+          if [ "$BADGE" != "$want_badge" ]; then
+            echo "::error::fixture badge was '$BADGE'."
+            exit 1
+          fi
+          echo "OK: fixture 8.1/10, disciplined, badge as expected."
+
+      - name: Run the action on the fixture above its score (expect exit 1)
+        id: below
+        uses: ./
+        continue-on-error: true
+        with:
+          path: tests/fixtures/workspace
+          min-score: '9'
+          summary: 'false'
+
+      - name: Run the action with a non-numeric min-score (expect exit 2)
+        id: bad-threshold
+        uses: ./
+        continue-on-error: true
+        with:
+          path: tests/fixtures/workspace
+          min-score: 'nine'
+          summary: 'false'
+
+      # Exit 1 sets the outputs before failing. Exit 2 stops before writing
+      # any, which is how the two failures are told apart here.
+      - name: Assert both gates failed the way they should
+        shell: bash
+        env:
+          BELOW_OUTCOME: ${{ steps.below.outcome }}
+          BELOW_SCORE: ${{ steps.below.outputs.score }}
+          BAD_OUTCOME: ${{ steps.bad-threshold.outcome }}
+          BAD_SCORE: ${{ steps.bad-threshold.outputs.score }}
+        run: |
+          set -euo pipefail
+          if [ "$BELOW_OUTCOME" != "failure" ] || [ "$BELOW_SCORE" != "8.1" ]; then
+            echo "::error::min-score 9 gave outcome '$BELOW_OUTCOME' with score '$BELOW_SCORE', not a failure that still set the score."
+            exit 1
+          fi
+          if [ "$BAD_OUTCOME" != "failure" ] || [ -n "$BAD_SCORE" ]; then
+            echo "::error::min-score 'nine' gave outcome '$BAD_OUTCOME' with score '$BAD_SCORE', not a failure with no outputs."
+            exit 1
+          fi
+          echo "OK: below-threshold and non-numeric gates both failed as designed."
