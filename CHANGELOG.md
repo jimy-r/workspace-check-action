@@ -4,11 +4,17 @@ All notable changes to this project are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
+## [1.1.0] - 2026-11-01
 
 ### Added
 
 - The job summary ends with two links: one to ask for a public second read of the workspace, one to post a score in Show and tell. The README has the same two links, and it now names redaction-check-action.
+- The vendored linter scores a workspace that has an `AGENTS.md` and no `CLAUDE.md`.
+
+### Changed
+
+- Scores can move. A workspace with one instruction file now reads `duplicate-blocks` as not applicable instead of a pass, so it can score a little lower. This repo's test fixture went from 8.1 `disciplined` to 7.9 `maturing`, and a `min-score` set close to your old score may now fail.
+- The check id `claude-md-present` is now `instruction-file-present`.
 
 ## [1.0.0] - 2026-10-30
 

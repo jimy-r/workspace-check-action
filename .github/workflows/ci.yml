@@ -132,7 +132,7 @@ jobs:
         uses: ./
         with:
           path: tests/fixtures/workspace
-          min-score: '8.1'
+          min-score: '7.9'
 
       - name: Assert the fixture's outputs
         shell: bash
@@ -142,16 +142,16 @@ jobs:
           BADGE: ${{ steps.fixture.outputs.badge-markdown }}
         run: |
           set -euo pipefail
-          want_badge='[![workspace score](https://img.shields.io/badge/workspace%20score-8.1%2F10-brightgreen)](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds)'
-          if [ "$SCORE" != "8.1" ] || [ "$BAND" != "disciplined" ]; then
-            echo "::error::fixture scored '$SCORE' '$BAND', not 8.1 disciplined."
+          want_badge='[![workspace score](https://img.shields.io/badge/workspace%20score-7.9%2F10-yellow)](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds)'
+          if [ "$SCORE" != "7.9" ] || [ "$BAND" != "maturing" ]; then
+            echo "::error::fixture scored '$SCORE' '$BAND', not 7.9 maturing."
             exit 1
           fi
           if [ "$BADGE" != "$want_badge" ]; then
             echo "::error::fixture badge was '$BADGE'."
             exit 1
           fi
-          echo "OK: fixture 8.1/10, disciplined, badge as expected."
+          echo "OK: fixture 7.9/10, maturing, badge as expected."
 
       - name: Run the action on the fixture above its score (expect exit 1)
         id: below
@@ -182,7 +182,7 @@ jobs:
           BAD_SCORE: ${{ steps.bad-threshold.outputs.score }}
         run: |
           set -euo pipefail
-          if [ "$BELOW_OUTCOME" != "failure" ] || [ "$BELOW_SCORE" != "8.1" ]; then
+          if [ "$BELOW_OUTCOME" != "failure" ] || [ "$BELOW_SCORE" != "7.9" ]; then
             echo "::error::min-score 9 gave outcome '$BELOW_OUTCOME' with score '$BELOW_SCORE', not a failure that still set the score."
             exit 1
           fi

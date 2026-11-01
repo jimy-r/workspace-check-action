@@ -2,7 +2,7 @@
 
 A composite GitHub Action that runs the [workspace check](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds) from agent-workspace-architecture in CI. The check is a single-file, read-only linter that scores an agent workspace out of 10 against the patterns a script can verify. This action puts the score, its band and a README badge on every run.
 
-[![workspace score](https://img.shields.io/badge/workspace%20score-8.1%2F10-brightgreen)](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds)
+[![workspace score](https://img.shields.io/badge/workspace%20score-7.9%2F10-yellow)](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds)
 
 That badge is this repo's test fixture. Your own run prints yours in the job summary.
 
@@ -83,7 +83,7 @@ Pass outputs to later steps through `env:`, as above, rather than writing the ex
 ## The badge
 
 ```markdown
-[![workspace score](https://img.shields.io/badge/workspace%20score-8.1%2F10-brightgreen)](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds)
+[![workspace score](https://img.shields.io/badge/workspace%20score-7.9%2F10-yellow)](https://github.com/jimy-r/agent-workspace-architecture#try-it-in-60-seconds)
 ```
 
 | Band | Score | Badge colour |
