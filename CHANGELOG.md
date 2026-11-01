@@ -6,15 +6,33 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.1.0] - 2026-11-01
 
+Scores move in this release, and `@v1` picks it up on its own. If you set `min-score`, read Changed first.
+
 ### Added
 
 - The job summary ends with two links: one to ask for a public second read of the workspace, one to post a score in Show and tell. The README has the same two links, and it now names redaction-check-action.
-- The vendored linter scores a workspace that has an `AGENTS.md` and no `CLAUDE.md`.
+
+### Fixed
+
+Both fixes arrive with the vendored linter, now at flagship commit `bfd85fa`.
+
+- A workspace whose only instruction file is `AGENTS.md` no longer fails the presence check. `CLAUDE.md`, `AGENTS.md` and their copies under `.claude/` all count. A workspace with none of them still fails.
+- A check with nothing to read no longer passes. `context-budget`, `duplicate-blocks` and `secrets-in-files` report not applicable when they found nothing to scan, and a check that doesn't apply drops out of the score. `duplicate-blocks` also reads not applicable with one instruction file, because there's nothing to compare it with.
 
 ### Changed
 
-- Scores can move. A workspace with one instruction file now reads `duplicate-blocks` as not applicable instead of a pass, so it can score a little lower. This repo's test fixture went from 8.1 `disciplined` to 7.9 `maturing`, and a `min-score` set close to your old score may now fail.
-- The check id `claude-md-present` is now `instruction-file-present`.
+- Scores move in both directions. `AGENTS.md` is now read, so a paragraph it shares with `CLAUDE.md` counts as a duplicate. This repo's test fixture is the `CLAUDE.md` and `MEMORY.md` row.
+
+  | Workspace | 1.0.0 | 1.1.0 |
+  |---|---|---|
+  | Empty directory | 6.4 `maturing` | 3.8 `exposed` |
+  | `CLAUDE.md` alone | 7.9 `maturing` | 7.5 `maturing` |
+  | `AGENTS.md` alone | 6.4 `maturing` | 7.5 `maturing` |
+  | `CLAUDE.md` and `MEMORY.md` | 8.1 `disciplined` | 7.9 `maturing` |
+  | `CLAUDE.md` and `AGENTS.md` sharing a paragraph of 240 characters or more | 7.9 `maturing` | 7.1 `maturing` |
+
+- A `min-score` near an old number can start failing. `min-score: '8'` on a `CLAUDE.md` and `MEMORY.md` workspace passed on 1.0.0 and fails on 1.1.0. Run once with `min-score` blank and set the threshold from the new score, or pin `@v1.0.0` until you've done that.
+- The check id `claude-md-present` is now `instruction-file-present`. Anything keyed on the old id in `--json` output needs the new name. The Action's outputs (`score`, `band`, `badge-markdown`) keep their names.
 
 ## [1.0.0] - 2026-10-30
 
