@@ -257,22 +257,20 @@ class SummaryTests(unittest.TestCase):
         )
         self.assertNotIn("Minimum score", summary)
 
-    def test_summary_asks_for_a_review_and_a_posted_score_after_the_badge(self):
+    def test_summary_offers_a_second_read_and_a_posted_score_after_the_badge(self):
         _, _, files = run_main(make_payload())
         summary = files["summary"]
-        self.assertIn("[Ask for a review](" + render.REVIEW_FORM_URL + ")", summary)
+        self.assertIn("[Ask for one](" + render.SECOND_READ_FORM_URL + ")", summary)
         self.assertIn(
             "[Post it in Show and tell](" + render.SCORE_FORM_URL + ")", summary
         )
         self.assertGreater(
-            summary.index(render.REVIEW_FORM_URL), summary.index("```markdown")
+            summary.index(render.SECOND_READ_FORM_URL), summary.index("```markdown")
         )
 
     def test_ask_links_open_the_flagship_forms(self):
         base = "https://github.com/jimy-r/agent-workspace-architecture/discussions/new"
-        self.assertEqual(
-            render.REVIEW_FORM_URL, base + "?category=review-my-workspace"
-        )
+        self.assertEqual(render.SECOND_READ_FORM_URL, base + "?category=second-read")
         self.assertEqual(render.SCORE_FORM_URL, base + "?category=show-and-tell")
 
     def test_summary_with_every_check_not_applicable(self):

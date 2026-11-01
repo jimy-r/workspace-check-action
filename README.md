@@ -96,11 +96,11 @@ The badge is a static snapshot, copied from the summary or the `badge-markdown` 
 
 ## The job summary
 
-The summary opens with the score line and the count of scored and not-applicable checks. Then comes one row per check (status, id, evidence and a link to its pattern), then the badge snippet, then links to ask for a review and to post a score. Evidence text from the scanned tree is escaped before it's rendered, so a file in the repo can't inject markdown or HTML into the page.
+The summary opens with the score line and the count of scored and not-applicable checks. Then comes one row per check (status, id, evidence and a link to its pattern), then the badge snippet, then links to ask for a second read and to post a score. Evidence text from the scanned tree is escaped before it's rendered, so a file in the repo can't inject markdown or HTML into the page.
 
 ## Get a second read
 
-The score comes from twelve mechanical checks, and nobody has read your setup. If the repo is public, [ask for a review](https://github.com/jimy-r/agent-workspace-architecture/discussions/new?category=review-my-workspace) and you get a written reply at the commit you name. If you changed something that moved the score, [post it in Show and tell](https://github.com/jimy-r/agent-workspace-architecture/discussions/new?category=show-and-tell). A line on what you changed is worth more than the number.
+The score comes from twelve mechanical checks, and nobody has read your setup. If the repo is public, [ask for one](https://github.com/jimy-r/agent-workspace-architecture/discussions/new?category=second-read) and you get a written reply at the commit you name. If you changed something that moved the score, [post it in Show and tell](https://github.com/jimy-r/agent-workspace-architecture/discussions/new?category=show-and-tell). A line on what you changed is worth more than the number.
 
 ## Exit codes
 
