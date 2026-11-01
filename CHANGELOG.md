@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- The job summary ends with two links: one to ask for a public review of the workspace, one to post a score in Show and tell. The README has the same two links, and it now names redaction-check-action.
+
 ## [1.0.0] - 2026-10-30
 
 ### Added

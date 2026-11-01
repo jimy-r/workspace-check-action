@@ -45,6 +45,14 @@ BAND_COLORS = {
 }
 UNKNOWN_BAND_COLOR = "lightgrey"
 SLUG_RE = re.compile(r"^[a-z0-9-]+$")
+REVIEW_FORM_URL = (
+    "https://github.com/jimy-r/agent-workspace-architecture"
+    "/discussions/new?category=review-my-workspace"
+)
+SCORE_FORM_URL = (
+    "https://github.com/jimy-r/agent-workspace-architecture"
+    "/discussions/new?category=show-and-tell"
+)
 
 
 class InputError(Exception):
@@ -194,6 +202,11 @@ def render_summary(payload: dict, threshold: float | None, gate_message: str) ->
         "```markdown",
         badge_markdown(score, band),
         "```",
+        "",
+        f"Want a second read on this workspace? [Ask for a review]({REVIEW_FORM_URL}). "
+        "The repo has to be public, and the reply is posted in the open.",
+        "",
+        f"Changed something that moved the score? [Post it in Show and tell]({SCORE_FORM_URL}).",
         "",
     ]
     return "\n".join(lines)
