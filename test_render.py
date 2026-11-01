@@ -26,7 +26,7 @@ def make_payload(score=8.1, band="disciplined", checks=None) -> dict:
     if checks is None:
         checks = [
             {
-                "id": "claude-md-present",
+                "id": "instruction-file-present",
                 "status": "PASS",
                 "evidence": "CLAUDE.md at the root, 0.1 KB",
                 "pattern": "9-context-is-a-budget-not-a-constant",
@@ -257,6 +257,22 @@ class SummaryTests(unittest.TestCase):
         )
         self.assertNotIn("Minimum score", summary)
 
+    def test_summary_offers_a_second_read_and_a_posted_score_after_the_badge(self):
+        _, _, files = run_main(make_payload())
+        summary = files["summary"]
+        self.assertIn("[Ask for one](" + render.SECOND_READ_FORM_URL + ")", summary)
+        self.assertIn(
+            "[Post it in Show and tell](" + render.SCORE_FORM_URL + ")", summary
+        )
+        self.assertGreater(
+            summary.index(render.SECOND_READ_FORM_URL), summary.index("```markdown")
+        )
+
+    def test_ask_links_open_the_flagship_forms(self):
+        base = "https://github.com/jimy-r/agent-workspace-architecture/discussions/new"
+        self.assertEqual(render.SECOND_READ_FORM_URL, base + "?category=second-read")
+        self.assertEqual(render.SCORE_FORM_URL, base + "?category=show-and-tell")
+
     def test_summary_with_every_check_not_applicable(self):
         checks = [
             {
@@ -336,12 +352,12 @@ class FixtureTests(unittest.TestCase):
         return proc.stdout
 
     def test_fixture_scores_as_ci_expects(self):
-        code, _, files = run_main(self.linter_json(), {"MIN_SCORE": "8"})
+        code, _, files = run_main(self.linter_json(), {"MIN_SCORE": "7.9"})
         self.assertEqual(code, 0)
         outputs = parse_outputs(files["output"])
-        self.assertEqual(outputs["score"], "8.1")
-        self.assertEqual(outputs["band"], "disciplined")
-        self.assertIn("(8 scored, 4 not applicable)", files["summary"])
+        self.assertEqual(outputs["score"], "7.9")
+        self.assertEqual(outputs["band"], "maturing")
+        self.assertIn("(7 scored, 5 not applicable)", files["summary"])
 
     def test_stdin_payload(self):
         with tempfile.TemporaryDirectory() as td:
@@ -353,7 +369,7 @@ class FixtureTests(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertEqual(
                 parse_outputs(Path(out_path).read_text(encoding="utf-8"))["score"],
-                "8.1",
+                "7.9",
             )
 
 
